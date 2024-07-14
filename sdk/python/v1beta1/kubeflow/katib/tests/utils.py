@@ -1,11 +1,7 @@
-import multiprocessing
 from typing import List, Optional
-from unittest.mock import patch, Mock
 
-import pytest
 from kubernetes.client import V1ObjectMeta
 
-from kubeflow.katib import KatibClient
 from kubeflow.katib import V1beta1AlgorithmSpec
 from kubeflow.katib import V1beta1Experiment
 from kubeflow.katib import V1beta1ExperimentSpec
@@ -16,29 +12,9 @@ from kubeflow.katib import V1beta1TrialParameterSpec
 from kubeflow.katib import V1beta1TrialTemplate
 from kubeflow.katib.constants import constants
 
-TEST_RESULT_SUCCESS = "success"
-
-
-class ConflictException(Exception):
-    def __init__(self):
-        self.status = 409
-
-
-def create_namespaced_custom_object_response(*args, **kwargs):
-    if args[2] == "timeout":
-        raise multiprocessing.TimeoutError()
-    elif args[2] == "conflict":
-        raise ConflictException()
-    elif args[2] == "runtime":
-        raise Exception()
-    elif args[2] in ("test", "test-name"):
-        return {"metadata": {"name": "experiment-mnist-ci-test"}}
-    elif args[2] == "test-generate-name":
-        return {"metadata": {"name": "12345-experiment-mnist-ci-test"}}
-
 
 def generate_trial_template() -> V1beta1TrialTemplate:
-    trial_spec={
+    trial_spec = {
         "apiVersion": "batch/v1",
         "kind": "Job",
         "spec": {
@@ -162,107 +138,3 @@ def create_experiment(
         trial_template
     )
     return experiment
-
-
-test_create_experiment_data = [
-    (
-        "experiment name and generate_name missing",
-        {"experiment": create_experiment()},
-        ValueError,
-    ),
-    (
-        "create_namespaced_custom_object timeout error",
-        {
-            "experiment": create_experiment(name="experiment-mnist-ci-test"),
-            "namespace": "timeout",
-        },
-        TimeoutError,
-    ),
-    (
-        "create_namespaced_custom_object conflict error",
-        {
-            "experiment": create_experiment(name="experiment-mnist-ci-test"),
-            "namespace": "conflict",
-        },
-        Exception,
-    ),
-    (
-        "create_namespaced_custom_object runtime error",
-        {
-            "experiment": create_experiment(name="experiment-mnist-ci-test"),
-            "namespace": "runtime",
-        },
-        RuntimeError,
-    ),
-    (
-        "valid flow with experiment type V1beta1Experiment and name",
-        {
-            "experiment": create_experiment(name="experiment-mnist-ci-test"),
-            "namespace": "test-name",
-        },
-        TEST_RESULT_SUCCESS,
-    ),
-    (
-        "valid flow with experiment type V1beta1Experiment and generate_name",
-        {
-            "experiment": create_experiment(generate_name="experiment-mnist-ci-test"),
-            "namespace": "test-generate-name",
-        },
-        TEST_RESULT_SUCCESS,
-    ),
-    (
-        "valid flow with experiment JSON and name",
-        {
-            "experiment": {
-                "metadata": {
-                    "name": "experiment-mnist-ci-test",
-                }
-            },
-            "namespace": "test-name",
-        },
-        TEST_RESULT_SUCCESS,
-    ),
-    (
-        "valid flow with experiment JSON and generate_name",
-        {
-            "experiment": {
-                "metadata": {
-                    "generate_name": "experiment-mnist-ci-test",
-                }
-            },
-            "namespace": "test-generate-name",
-        },
-        TEST_RESULT_SUCCESS,
-    ),
-]
-
-
-@pytest.fixture
-def katib_client():
-    with patch(
-        "kubernetes.client.CustomObjectsApi",
-        return_value=Mock(
-            create_namespaced_custom_object=Mock(
-                side_effect=create_namespaced_custom_object_response
-            )
-        ),
-    ), patch(
-        "kubernetes.config.load_kube_config",
-        return_value=Mock()
-    ):
-        client = KatibClient()
-        yield client
-
-
-@pytest.mark.parametrize("test_name,kwargs,expected_output", test_create_experiment_data)
-def test_create_experiment(katib_client, test_name, kwargs, expected_output):
-    """
-    test create_experiment function of katib client
-    """
-    print("\n\nExecuting test:", test_name)
-    try:
-        katib_client.create_experiment(**kwargs)
-        assert expected_output == TEST_RESULT_SUCCESS
-    except Exception as e:
-        assert type(e) is expected_output
-    print("test execution complete")
