@@ -5,8 +5,19 @@ from kubeflow.katib.tests.test_data import TEST_RESULT_SUCCESS, test_create_expe
 
 @pytest.mark.parametrize("test_name,kwargs,expected_output", test_create_experiment_data)
 def test_create_experiment(katib_client, test_name, kwargs, expected_output):
-    """
-    test create_experiment function of katib client
+    """Test function for `create_experiment` method of `katib_client`.
+
+    Parameters:
+    - katib_client (fixture): Fixture providing an instance of `KatibClient`.
+    - test_name (str): Name of the test case.
+    - kwargs (dict): Keyword arguments to pass to `create_experiment`.
+    - expected_output (type): Expected exception type or `TEST_RESULT_SUCCESS`.
+
+    Raises:
+    - AssertionError: If the test fails to assert the expected behavior.
+
+    Returns:
+    - None
     """
     print("\n\nExecuting test:", test_name)
     try:
