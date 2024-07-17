@@ -1,4 +1,4 @@
-from kubeflow.katib.tests.utils import create_experiment
+from kubeflow.katib.tests.utils import create_experiment, train_mnist_model
 
 TEST_RESULT_SUCCESS = "success"
 
@@ -73,4 +73,8 @@ test_create_experiment_data = [
         },
         TEST_RESULT_SUCCESS,
     ),
+]
+
+
+test_tune_data = [
 ]
