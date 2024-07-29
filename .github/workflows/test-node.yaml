@@ -1,6 +1,7 @@
 name: Frontend Test
 
 on:
+  push:
   pull_request:
     paths:
       - pkg/ui/v1beta1/frontend/**
@@ -21,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 12.18.1
+          node-version: 16.20.2
 
       - name: Format katib code
         run: |
@@ -44,12 +45,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 12.18.1
+          node-version: 16.20.2
 
       - name: Fetch Kubeflow and install common code dependencies
         run: |
           COMMIT=$(cat pkg/ui/v1beta1/frontend/COMMIT)
-          cd /tmp && git clone https://github.com/kubeflow/kubeflow.git
+          cd /tmp && git clone https://github.com/tariq-hasan/kubeflow.git
           cd kubeflow
           git checkout $COMMIT
           cd components/crud-web-apps/common/frontend/kubeflow-common-lib
@@ -74,15 +75,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup node version to 12
+      - name: Setup node version to 16
         uses: actions/setup-node@v4
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Fetch Kubeflow and install common code dependencies
         run: |
           COMMIT=$(cat pkg/ui/v1beta1/frontend/COMMIT)
-          cd /tmp && git clone https://github.com/kubeflow/kubeflow.git
+          cd /tmp && git clone https://github.com/tariq-hasan/kubeflow.git
           cd kubeflow
           git checkout $COMMIT
           cd components/crud-web-apps/common/frontend/kubeflow-common-lib
@@ -97,5 +98,4 @@ jobs:
       - name: Serve UI & run Cypress tests in Chrome and Firefox
         run: |
           cd pkg/ui/v1beta1/frontend
-          npm run start & npx wait-on http://localhost:4200
-          npm run ui-test-ci-all
+          npm run start & npx wait-on http://localhost:4200 && npm run ui-test-ci-all

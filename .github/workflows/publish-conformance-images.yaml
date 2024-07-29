@@ -1,7 +1,6 @@
 name: Publish Katib Conformance Test Images
 
 on:
-  - push
   - pull_request
 
 jobs:

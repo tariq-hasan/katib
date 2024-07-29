@@ -1,7 +1,6 @@
 name: Publish AutoML Algorithm Images
 
 on:
-  push:
   pull_request:
     paths-ignore:
       - "pkg/ui/v1beta1/frontend/**"

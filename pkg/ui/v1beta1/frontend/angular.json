@@ -17,6 +17,10 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "allowedCommonJsDependencies": [
+              "date-fns",
+              "lodash"
+            ],
             "preserveSymlinks": true,
             "outputPath": "dist/frontend",
             "index": "src/index.html",
@@ -154,6 +158,7 @@
   },
   "defaultProject": "frontend",
   "cli": {
-    "defaultCollection": "@angular-eslint/schematics"
+    "defaultCollection": "@angular-eslint/schematics",
+    "analytics": "f9b1d60e-9852-47ce-9a25-a552ab2e04b6"
   }
 }
