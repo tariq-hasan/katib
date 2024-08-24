@@ -1,51 +1,3 @@
-# --- Clone the kubeflow/kubeflow code ---
-FROM ubuntu AS fetch-kubeflow-kubeflow
-
-RUN apt-get update && apt-get install git -y
-
-WORKDIR /kf
-COPY ./pkg/ui/v1beta1/frontend/COMMIT ./
-RUN git clone https://github.com/tariq-hasan/kubeflow.git && \
-    COMMIT=$(cat ./COMMIT) && \
-    cd kubeflow && \
-    git checkout $COMMIT
-
-# --- Build the frontend kubeflow library ---
-FROM node:16 AS frontend-kubeflow-lib
-
-WORKDIR /src
-
-ARG LIB=/kf/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib
-COPY --from=fetch-kubeflow-kubeflow $LIB/package*.json ./
-RUN npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config get registry && \
-    npm config set registry https://registry.npmjs.org/ && \
-    npm config get https-proxy && \
-    npm config rm https-proxy && \
-    npm ci
-
-COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
-RUN npm run build
-
-# --- Build the frontend ---
-FROM node:16 AS frontend
-
-WORKDIR /src
-COPY ./pkg/ui/v1beta1/frontend/package*.json ./
-RUN npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config get registry && \
-    npm config set registry https://registry.npmjs.org/ && \
-    npm config get https-proxy && \
-    npm config rm https-proxy && \
-    npm ci
-
-COPY ./pkg/ui/v1beta1/frontend/ .
-COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
-
-RUN npm run build:prod
-
 # --- Build the backend ---
 FROM golang:alpine AS go-build
 
@@ -64,6 +16,53 @@ COPY pkg/ pkg/
 
 # Build the binary.
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a -o katib-ui  ./cmd/ui/v1beta1
+
+# --- Clone the kubeflow/kubeflow code ---
+FROM ubuntu AS fetch-kubeflow-kubeflow
+
+RUN apt-get update && apt-get install git -y
+
+WORKDIR /kf
+COPY ./pkg/ui/v1beta1/frontend/COMMIT ./
+RUN git clone https://github.com/tariq-hasan/kubeflow.git && \
+    COMMIT=$(cat ./COMMIT) && \
+    cd kubeflow && \
+    git checkout $COMMIT
+
+# --- Build the frontend kubeflow library ---
+FROM node:16-bullseye-slim as frontend-kubeflow-lib
+
+WORKDIR /src
+
+ENV NG_CLI_ANALYTICS "ci"
+ARG LIB=/kf/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib
+COPY --from=fetch-kubeflow-kubeflow $LIB/package.json ./
+COPY --from=fetch-kubeflow-kubeflow $LIB/package-lock.json ./
+RUN npm ci
+
+COPY --from=fetch-kubeflow-kubeflow $LIB/projects ./projects
+COPY --from=fetch-kubeflow-kubeflow $LIB/angular.json .
+COPY --from=fetch-kubeflow-kubeflow $LIB/tsconfig.json .
+RUN npm run build
+
+# --- Build the frontend ---
+FROM node:16-bullseye-slim AS frontend
+
+WORKDIR /src
+
+COPY ./pkg/ui/v1beta1/frontend/package.json ./
+COPY ./pkg/ui/v1beta1/frontend/package-lock.json ./
+COPY ./pkg/ui/v1beta1/frontend/tsconfig.json ./
+COPY ./pkg/ui/v1beta1/frontend/tsconfig.app.json ./
+COPY ./pkg/ui/v1beta1/frontend/tsconfig.spec.json ./
+COPY ./pkg/ui/v1beta1/frontend/angular.json ./
+COPY ./pkg/ui/v1beta1/frontend/src ./src
+
+ENV NG_CLI_ANALYTICS "ci"
+RUN npm ci
+COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
+
+RUN npm run build:prod
 
 # --- Compose the web app ---
 FROM alpine:3.15
