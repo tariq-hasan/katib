@@ -49,7 +49,7 @@ jobs:
       - name: Fetch Kubeflow and install common code dependencies
         run: |
           COMMIT=$(cat pkg/ui/v1beta1/frontend/COMMIT)
-          cd /tmp && git clone https://github.com/tariq-hasan/kubeflow.git
+          cd /tmp && git clone https://github.com/kubeflow/kubeflow.git
           cd kubeflow
           git checkout $COMMIT
           cd components/crud-web-apps/common/frontend/kubeflow-common-lib
@@ -82,7 +82,7 @@ jobs:
       - name: Fetch Kubeflow and install common code dependencies
         run: |
           COMMIT=$(cat pkg/ui/v1beta1/frontend/COMMIT)
-          cd /tmp && git clone https://github.com/tariq-hasan/kubeflow.git
+          cd /tmp && git clone https://github.com/kubeflow/kubeflow.git
           cd kubeflow
           git checkout $COMMIT
           cd components/crud-web-apps/common/frontend/kubeflow-common-lib
