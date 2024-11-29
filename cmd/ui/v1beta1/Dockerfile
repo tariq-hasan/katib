@@ -11,7 +11,7 @@ RUN git clone https://github.com/kubeflow/kubeflow.git && \
     git checkout $COMMIT
 
 # --- Build the frontend kubeflow library ---
-FROM node:12 AS frontend-kubeflow-lib
+FROM node:16 AS frontend-kubeflow-lib
 
 WORKDIR /src
 
@@ -23,7 +23,7 @@ COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:12 AS frontend
+FROM node:16 AS frontend
 
 WORKDIR /src
 COPY ./pkg/ui/v1beta1/frontend/package*.json ./

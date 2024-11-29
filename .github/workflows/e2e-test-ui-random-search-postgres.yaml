@@ -1,6 +1,7 @@
 name: E2E Test with Katib UI, random search, and postgres
 
 on:
+  - push
   - pull_request
 
 concurrency:
