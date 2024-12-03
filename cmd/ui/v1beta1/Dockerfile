@@ -11,37 +11,39 @@ RUN git clone https://github.com/kubeflow/kubeflow.git && \
     git checkout $COMMIT
 
 # --- Build the frontend kubeflow library ---
-FROM node:16 AS frontend-kubeflow-lib
+FROM node:16.20.2-bullseye AS frontend-kubeflow-lib
 
 WORKDIR /src
 
+ENV NG_CLI_ANALYTICS "ci"
 ARG LIB=/kf/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib
-COPY --from=fetch-kubeflow-kubeflow $LIB/package*.json ./
-RUN npm config set fetch-retry-mintimeout 200000 && \
-    npm config set fetch-retry-maxtimeout 1200000 && \
-    npm config get registry && \
-    npm config set registry https://registry.npmjs.org/ && \
-    npm config get https-proxy && \
-    npm config rm https-proxy && \
-    npm ci
+COPY --from=fetch-kubeflow-kubeflow $LIB/package.json ./
+COPY --from=fetch-kubeflow-kubeflow $LIB/package-lock.json ./
+RUN npm ci
 
-COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
+COPY --from=fetch-kubeflow-kubeflow $LIB/projects ./projects
+COPY --from=fetch-kubeflow-kubeflow $LIB/angular.json .
+COPY --from=fetch-kubeflow-kubeflow $LIB/tsconfig.json .
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:16 AS frontend
+FROM node:16.20.2-bullseye as frontend
+
+COPY ./pkg/ui/v1beta1/frontend ./src
+WORKDIR /src
 
 WORKDIR /src
-COPY ./pkg/ui/v1beta1/frontend/package*.json ./
-RUN npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config get registry && \
-    npm config set registry https://registry.npmjs.org/ && \
-    npm config get https-proxy && \
-    npm config rm https-proxy && \
-    npm ci
 
-COPY ./pkg/ui/v1beta1/frontend/ .
+COPY ./pkg/ui/v1beta1/frontend/package.json ./
+COPY ./pkg/ui/v1beta1/frontend/package-lock.json ./
+COPY ./pkg/ui/v1beta1/frontend/tsconfig.json ./
+COPY ./pkg/ui/v1beta1/frontend/tsconfig.app.json ./
+COPY ./pkg/ui/v1beta1/frontend/tsconfig.spec.json ./
+COPY ./pkg/ui/v1beta1/frontend/angular.json ./
+COPY ./pkg/ui/v1beta1/frontend/src ./src
+
+ENV NG_CLI_ANALYTICS "ci"
+RUN npm ci
 COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
 
 RUN npm run build:prod
